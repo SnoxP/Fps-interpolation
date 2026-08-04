@@ -27,7 +27,7 @@ export function UploadArea({ onFileSelect }: UploadAreaProps) {
       if (file.type === 'video/mp4' || file.type === 'image/gif') {
         onFileSelect(file);
       } else {
-        alert('Please upload an MP4 or GIF file.');
+        alert('Por favor, envie um arquivo MP4 ou GIF.');
       }
     }
   }, [onFileSelect]);
@@ -42,8 +42,8 @@ export function UploadArea({ onFileSelect }: UploadAreaProps) {
   return (
     <div className="w-full max-w-2xl mx-auto mt-16">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-zinc-100 mb-4 tracking-tight">Enhance Video Fluidity with AI</h1>
-        <p className="text-lg text-zinc-400">Upload your MP4 or GIF to intelligently interpolate frames up to 120 FPS.</p>
+        <h1 className="text-4xl font-bold text-zinc-100 mb-4 tracking-tight">Melhore a Fluidez do Vídeo com IA</h1>
+        <p className="text-lg text-zinc-400">Envie seu MP4 ou GIF para interpolar quadros inteligentemente até 120 FPS.</p>
       </div>
 
       <div
@@ -67,8 +67,8 @@ export function UploadArea({ onFileSelect }: UploadAreaProps) {
             {isDragging ? <FileVideo className="w-8 h-8" /> : <UploadCloud className="w-8 h-8" />}
           </div>
           <div>
-            <p className="text-zinc-200 font-medium text-lg">Click or drag a file to this area to upload.</p>
-            <p className="text-zinc-500 text-sm mt-2">Supports MP4 and GIF up to 500MB</p>
+            <p className="text-zinc-200 font-medium text-lg">Clique ou arraste um arquivo para esta área para enviar.</p>
+            <p className="text-zinc-500 text-sm mt-2">Suporta MP4 e GIF até 500MB</p>
           </div>
         </div>
       </div>

@@ -1,12 +1,13 @@
-import { Loader2, Layers } from 'lucide-react';
+import { Loader2, Layers, AlertCircle, X } from 'lucide-react';
 
 interface ProcessingViewProps {
   progress: number;
   message: string;
   systemInfo?: string;
+  onCancel?: () => void;
 }
 
-export function ProcessingView({ progress, message, systemInfo }: ProcessingViewProps) {
+export function ProcessingView({ progress, message, systemInfo, onCancel }: ProcessingViewProps) {
   let currentFrames = 0;
   let totalFrames = 0;
   let hasFrames = false;
@@ -79,7 +80,26 @@ export function ProcessingView({ progress, message, systemInfo }: ProcessingView
         </div>
       )}
       
-      <p className="text-zinc-500 text-sm mt-8">Please do not close this window while AI is processing.</p>
+      <div className="mt-8 max-w-md mx-auto text-left bg-zinc-900/50 border border-zinc-800/80 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-zinc-300 text-sm">
+              Por favor, não feche esta janela enquanto a IA estiver processando. Este processo pode levar alguns minutos dependendo do tamanho do vídeo.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {onCancel && (
+        <button
+          onClick={onCancel}
+          className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors border border-red-500/20"
+        >
+          <X className="w-4 h-4" />
+          Cancelar Interpolação
+        </button>
+      )}
     </div>
   );
 }

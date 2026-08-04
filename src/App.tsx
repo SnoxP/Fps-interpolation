@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { UploadArea } from './components/UploadArea';
 import { ConfigPanel } from './components/ConfigPanel';
@@ -20,6 +20,9 @@ export default function App() {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const pollingIntervalRef = useRef<number | null>(null);
+
   const handleFileSelect = useCallback((selectedFile: File) => {
     setFile(selectedFile);
     setStatus('configuring');
@@ -32,25 +35,49 @@ export default function App() {
     setErrorMessage(null);
   }, []);
 
+  const handleCancelProcessing = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+    
+    // Tentar cancelar no backend também se estivermos usando uma API
+    const currentApiUrl = document.querySelector('input[type="url"]')?.getAttribute('value') || 'https://adena-dangerless-infrequently.ngrok-free.dev/interpolate';
+    if (currentApiUrl) {
+      try {
+        const cancelUrl = currentApiUrl.replace('/interpolate', '/cancel');
+        fetch(cancelUrl, { 
+          method: 'POST',
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        }).catch(e => console.error('Error cancelling on backend:', e));
+      } catch(e) {}
+    }
+
+    setStatus('configuring');
+    setErrorMessage('O processo foi cancelado pelo usuário.');
+  }, []);
+
   const handleStartProcessing = useCallback(async (fps: number, apiUrl: string, user: User) => {
     if (!file) return;
     setStatus('processing');
     setProgress(0);
-    setProgressMessage('Analyzing frames...');
+    setProgressMessage('Analisando quadros...');
     setSystemInfo('');
     setErrorMessage(null);
 
-    let pollingInterval: number | null = null;
+    abortControllerRef.current = new AbortController();
 
     try {
       if (apiUrl) {
         // Real process
-        setProgressMessage('Uploading and Processing via API...');
+        setProgressMessage('Enviando e Processando via API...');
         setProgress(5);
         
         const statusUrl = apiUrl.replace('/interpolate', '/status');
         
-        pollingInterval = window.setInterval(async () => {
+        pollingIntervalRef.current = window.setInterval(async () => {
           try {
             const statusUrl = apiUrl.replace('/interpolate', `/status?t=${Date.now()}`);
             const res = await fetch(statusUrl, { headers: { 'ngrok-skip-browser-warning': 'true' } });
@@ -74,10 +101,11 @@ export default function App() {
           headers: {
             'ngrok-skip-browser-warning': 'true'
           },
-          body: formData
+          body: formData,
+          signal: abortControllerRef.current.signal
         });
 
-        if (pollingInterval) clearInterval(pollingInterval);
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
 
         // Check if the response is JSON (often an error object)
         const contentType = response.headers.get('content-type');
@@ -89,17 +117,17 @@ export default function App() {
         }
 
         if (!response.ok) {
-          throw new Error(`API Error: ${response.statusText}`);
+          throw new Error(`Erro na API: ${response.statusText}`);
         }
 
         setProgress(80);
-        setProgressMessage('Finalizing...');
+        setProgressMessage('Finalizando...');
         
         const blob = await response.blob();
         console.log(`Received blob: ${blob.size} bytes, type: ${blob.type}`);
         
         if (blob.size === 0) {
-          throw new Error('Received an empty video file from the API.');
+          throw new Error('A API retornou um arquivo de vídeo vazio.');
         }
 
         const url = URL.createObjectURL(blob);
@@ -144,22 +172,22 @@ export default function App() {
       } else {
         // Simulation process
         const stages = [
-          { p: 10, m: 'Extracting frames...' },
-          { p: 35, m: 'Running optical flow analysis...' },
-          { p: 65, m: `Interpolating to ${fps} FPS...` },
-          { p: 90, m: 'Encoding output video...' },
-          { p: 100, m: 'Done' }
+          { p: 10, m: 'Extraindo quadros...' },
+          { p: 35, m: 'Executando análise de fluxo óptico...' },
+          { p: 65, m: `Interpolando para ${fps} FPS...` },
+          { p: 90, m: 'Codificando vídeo de saída...' },
+          { p: 100, m: 'Concluído' }
         ];
 
         let currentStage = 0;
         
-        const simulateInterval = setInterval(() => {
+        pollingIntervalRef.current = window.setInterval(() => {
           if (currentStage < stages.length) {
             setProgress(stages[currentStage].p);
             setProgressMessage(stages[currentStage].m);
             currentStage++;
           } else {
-            clearInterval(simulateInterval);
+            if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
             
             // In simulation, we just return the original file as a mock result
             const url = URL.createObjectURL(file);
@@ -202,10 +230,14 @@ export default function App() {
         }, 1500);
       }
     } catch (err: any) {
-      if (pollingInterval) clearInterval(pollingInterval);
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+      if (err.name === 'AbortError') {
+        console.log('Process aborted');
+        return;
+      }
       console.error(err);
       setStatus('error');
-      setErrorMessage(err.message || 'An error occurred during processing.');
+      setErrorMessage(err.message || 'Ocorreu um erro durante o processamento.');
     }
   }, [file]);
 
@@ -230,13 +262,13 @@ export default function App() {
               <div className="w-full max-w-2xl mx-auto mb-8 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-red-400 font-medium">Processing Failed</h4>
+                  <h4 className="text-red-400 font-medium">Falha no Processamento</h4>
                   <p className="text-red-300/80 text-sm mt-1">{errorMessage}</p>
                   <button 
                     onClick={() => setStatus('configuring')}
                     className="text-sm font-medium text-red-400 underline mt-2 hover:text-red-300"
                   >
-                    Try Again
+                    Tentar Novamente
                   </button>
                 </div>
               </div>
@@ -259,6 +291,7 @@ export default function App() {
                 progress={progress} 
                 message={progressMessage} 
                 systemInfo={systemInfo}
+                onCancel={handleCancelProcessing}
               />
             )}
 

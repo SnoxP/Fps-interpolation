@@ -44,11 +44,11 @@ export function HistoryPanel({ user, isDrawer }: HistoryPanelProps) {
         {!isDrawer && (
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-lg font-medium text-white">Interpolation History</h3>
+            <h3 className="text-lg font-medium text-white">Histórico de Interpolação</h3>
           </div>
         )}
         <p className="text-sm text-zinc-400">
-          No processed videos yet.
+          Nenhum vídeo processado ainda.
         </p>
       </div>
     );
@@ -64,10 +64,10 @@ export function HistoryPanel({ user, isDrawer }: HistoryPanelProps) {
         <>
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-lg font-medium text-white">Interpolation History</h3>
+            <h3 className="text-lg font-medium text-white">Histórico de Interpolação</h3>
           </div>
           <p className="text-sm text-zinc-400 mb-6">
-            Your processed videos are securely saved in the cloud (using Catbox) and will be available across your devices.
+            Seus vídeos processados são salvos com segurança na nuvem (usando Catbox) e estarão disponíveis em todos os seus dispositivos.
           </p>
         </>
       )}
@@ -97,11 +97,11 @@ export function HistoryPanel({ user, isDrawer }: HistoryPanelProps) {
                   className={`flex items-center justify-center gap-2 px-4 py-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 text-sm font-medium rounded-lg transition-colors ${isDrawer ? 'w-full sm:w-auto' : ''}`}
                 >
                   <Download className="w-4 h-4" />
-                  View Video
+                  Ver Vídeo
                 </a>
               ) : (
                 <div className={`px-3 py-1 bg-green-500/10 text-green-400 text-xs font-medium rounded-full border border-green-500/20 text-center ${isDrawer ? 'w-full sm:w-auto' : ''}`}>
-                  Saving...
+                  Salvando...
                 </div>
               )}
             </div>

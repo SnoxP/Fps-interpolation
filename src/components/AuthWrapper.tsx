@@ -31,7 +31,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.error('Error signing in with Google:', error);
-      setError('Failed to sign in with Google');
+      setError('Falha ao entrar com o Google');
     }
   };
 
@@ -49,13 +49,15 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     } catch (err: any) {
       console.error('Auth error:', err);
       // Simplify Firebase error messages
-      let message = err.message || 'An error occurred';
+      let message = err.message || 'Ocorreu um erro';
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-        message = 'Invalid email or password';
+        message = 'Email ou senha inválidos';
       } else if (err.code === 'auth/email-already-in-use') {
-        message = 'An account with this email already exists';
+        message = 'Uma conta com este email já existe';
       } else if (err.code === 'auth/weak-password') {
-        message = 'Password should be at least 6 characters';
+        message = 'A senha deve ter pelo menos 6 caracteres';
+      } else if (err.code === 'auth/operation-not-allowed') {
+        message = 'Login com email/senha não está habilitado no Firebase.';
       }
       setError(message);
     } finally {
@@ -80,7 +82,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-white">MotionAI</h1>
           <p className="text-zinc-400 mb-8 text-center text-sm">
-            {isLogin ? 'Sign in back to your account' : 'Create an account to start interpolating'}
+            {isLogin ? 'Entre na sua conta' : 'Crie uma conta para começar a interpolar'}
           </p>
 
           <form onSubmit={handleEmailAuth} className="w-full space-y-4 mb-6">
@@ -91,7 +93,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
+                  placeholder="Endereço de email"
                   required
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-zinc-200 placeholder:text-zinc-600 transition-colors"
                 />
@@ -104,7 +106,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
+                  placeholder="Senha"
                   required
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-zinc-200 placeholder:text-zinc-600 transition-colors"
                 />
@@ -125,14 +127,14 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                isLogin ? 'Sign In' : 'Sign Up'
+                isLogin ? 'Entrar' : 'Cadastrar'
               )}
             </button>
           </form>
 
           <div className="flex items-center gap-4 w-full mb-6">
             <div className="h-px bg-zinc-800 flex-1"></div>
-            <span className="text-xs text-zinc-500 uppercase font-medium">Or continue with</span>
+            <span className="text-xs text-zinc-500 uppercase font-medium">Ou continue com</span>
             <div className="h-px bg-zinc-800 flex-1"></div>
           </div>
 
@@ -146,7 +148,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
           </button>
           
           <div className="mt-8 text-sm text-zinc-500 text-center">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            {isLogin ? "Não tem uma conta? " : "Já tem uma conta? "}
             <button
               type="button"
               onClick={() => {
@@ -155,7 +157,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
               }}
               className="text-indigo-400 hover:text-indigo-300 font-medium hover:underline"
             >
-              {isLogin ? 'Sign up' : 'Sign in'}
+              {isLogin ? 'Cadastrar' : 'Entrar'}
             </button>
           </div>
         </div>

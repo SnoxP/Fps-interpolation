@@ -25,17 +25,17 @@ export function Header({ user }: HeaderProps) {
           <span className="text-xl font-semibold tracking-tight text-zinc-100">MotionAI</span>
         </div>
         <nav className="flex items-center gap-4 sm:gap-6 text-sm font-medium text-zinc-400">
-          <a href="#" className="hidden sm:block hover:text-zinc-100 transition-colors">Documentation</a>
+          <a href="#" className="hidden sm:block hover:text-zinc-100 transition-colors">Documentação</a>
           {user && (
             <div className="flex items-center gap-4 sm:ml-4 sm:pl-4 sm:border-l border-zinc-800">
               <span className="hidden sm:inline text-zinc-300">{user.displayName || user.email}</span>
               <button
                 onClick={handleSignOut}
                 className="hidden sm:flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-                title="Sign out"
+                title="Sair"
               >
                 <LogOut className="w-4 h-4" />
-                Sign out
+                Sair
               </button>
               <button
                 onClick={() => setIsDrawerOpen(true)}
@@ -60,7 +60,7 @@ export function Header({ user }: HeaderProps) {
             <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800/50">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-indigo-400" />
-                <h2 className="text-xl font-medium text-white tracking-tight">Saved Videos</h2>
+                <h2 className="text-xl font-medium text-white tracking-tight">Vídeos Salvos</h2>
               </div>
               <button 
                 onClick={() => setIsDrawerOpen(false)} 
@@ -78,14 +78,14 @@ export function Header({ user }: HeaderProps) {
 
             <div className="mt-auto pt-6 border-t border-zinc-800/50 sm:hidden">
               <div className="mb-4 text-sm text-zinc-400 truncate px-2">
-                Signed in as: <span className="text-zinc-200">{user?.displayName || user?.email}</span>
+                Logado como: <span className="text-zinc-200">{user?.displayName || user?.email}</span>
               </div>
               <button
                 onClick={handleSignOut}
                 className="flex items-center justify-center w-full gap-2 py-3 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-colors font-medium text-sm"
               >
                 <LogOut className="w-4 h-4" />
-                Sign out
+                Sair
               </button>
             </div>
           </div>

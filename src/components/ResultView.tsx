@@ -33,8 +33,8 @@ export function ResultView({ resultUrl, originalFile, onReset }: ResultViewProps
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 mb-4">
           <CheckCircle2 className="w-6 h-6" />
         </div>
-        <h2 className="text-3xl font-bold text-zinc-100 tracking-tight mb-2">Processing Complete</h2>
-        <p className="text-zinc-400 text-lg">Your video has been successfully interpolated.</p>
+        <h2 className="text-3xl font-bold text-zinc-100 tracking-tight mb-2">Processamento Concluído</h2>
+        <p className="text-zinc-400 text-lg">Seu vídeo foi interpolado com sucesso.</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 mb-10">
@@ -55,7 +55,7 @@ export function ResultView({ resultUrl, originalFile, onReset }: ResultViewProps
 
         <div className="bg-zinc-900/50 rounded-2xl p-4 border border-zinc-800 ring-1 ring-indigo-500/20">
           <div className="flex items-center justify-between mb-4 px-2">
-            <span className="text-sm font-medium text-indigo-400 uppercase tracking-wider">Interpolated (AI)</span>
+            <span className="text-sm font-medium text-indigo-400 uppercase tracking-wider">Interpolado (IA)</span>
           </div>
           <div className="aspect-video bg-black rounded-lg overflow-hidden border border-indigo-500/30 flex items-center justify-center">
             {/* O retorno da API será SEMPRE um vídeo MP4 */}
@@ -72,14 +72,14 @@ export function ResultView({ resultUrl, originalFile, onReset }: ResultViewProps
           className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
-          Process Another
+          Processar Outro
         </button>
         <button
           onClick={handleDownload}
           className="flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all"
         >
           <Download className="w-4 h-4" />
-          Download Result
+          Baixar Resultado
         </button>
       </div>
     </div>
