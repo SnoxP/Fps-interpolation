@@ -1,0 +1,13 @@
+{
+  "collections": {
+    "videos": {
+      "description": "History of interpolated videos for a user",
+      "fields": {
+        "userId": "string",
+        "fileName": "string",
+        "fps": "number",
+        "createdAt": "timestamp"
+      }
+    }
+  }
+}
