@@ -60,7 +60,7 @@ export function ResultView({ resultUrl, originalFile, onReset }: ResultViewProps
           <div className="aspect-video bg-black rounded-lg overflow-hidden border border-indigo-500/30 flex items-center justify-center">
             {/* O retorno da API será SEMPRE um vídeo MP4 */}
             {resultUrl ? (
-              <video src={resultUrl} autoPlay loop controls className="w-full h-full object-contain" />
+              <video src={resultUrl} controls className="w-full h-full object-contain" />
             ) : null}
           </div>
         </div>
