@@ -17,16 +17,16 @@ export function ConfigPanel({ files, onStart, onCancel }: ConfigPanelProps) {
   ];
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-16 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-8 backdrop-blur-sm">
-      <div className="flex items-center gap-3 mb-8 pb-6 border-b border-zinc-800">
+    <div className="w-full max-w-2xl mx-auto mt-8 sm:mt-16 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+      <div className="flex items-center gap-3 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-zinc-800">
         <Settings2 className="w-6 h-6 text-indigo-400" />
-        <h2 className="text-2xl font-semibold text-zinc-100 tracking-tight">Configuração</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-zinc-100 tracking-tight">Configuração</h2>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-4">Taxa de Quadros Alvo (FPS)</label>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {fpsOptions.map((opt) => (
               <button
                 key={opt.value}
@@ -47,14 +47,14 @@ export function ConfigPanel({ files, onStart, onCancel }: ConfigPanelProps) {
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-amber-400 font-medium text-sm">Aviso de Limitações de Rede e do Google Colab</h4>
+            <h4 className="text-amber-400 font-medium text-sm">Divisão Automática de Vídeo</h4>
             <p className="text-amber-300/80 text-xs mt-1">
-              Devido ao tempo de processamento e ao tamanho do arquivo final, <strong>vídeos mais longos podem concluir a interpolação no Colab, mas falhar na hora de enviar o resultado de volta para o aplicativo</strong> (devido a timeouts da conexão do Ngrok). Por isso, recomendamos o envio de vídeos curtos (10 a 15 segundos) e dividi-los se necessário.
+              Para evitar erros de memória e timeout de rede no Google Colab, <strong>seus vídeos serão divididos automaticamente em partes de 15 segundos</strong>, processados individualmente e unidos no final. Por favor, não feche a página durante esse processo.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-6 mt-6 border-t border-zinc-800">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 sm:gap-4 pt-6 mt-6 border-t border-zinc-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-medium text-zinc-400">
               <Files className="w-5 h-5" />
@@ -63,16 +63,17 @@ export function ConfigPanel({ files, onStart, onCancel }: ConfigPanelProps) {
               {files.length} {files.length === 1 ? 'arquivo selecionado' : 'arquivos selecionados'}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <button
               onClick={onCancel}
-              className="px-5 py-2.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+              className="px-5 py-3 sm:py-2.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors text-center"
             >
               Cancelar
             </button>
             <button
               onClick={() => onStart(fps)}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all"
+              className="flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all"
             >
               <Play className="w-4 h-4" fill="currentColor" />
               Iniciar Processamento

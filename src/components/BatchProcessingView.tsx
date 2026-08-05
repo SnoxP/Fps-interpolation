@@ -42,32 +42,36 @@ export function BatchProcessingView({ tasks, onCancelAll, onRetry, onReset }: Ba
       <div className="space-y-4">
         {tasks.map((task) => (
           <div key={task.id} className="bg-zinc-900/50 rounded-2xl p-4 border border-zinc-800">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-zinc-200">{task.file.name}</span>
-                {task.status === 'pending' && <span className="px-2 py-1 text-xs font-medium rounded-full bg-zinc-800 text-zinc-400">Pendente</span>}
-                {task.status === 'processing' && <span className="px-2 py-1 text-xs font-medium rounded-full bg-indigo-500/10 text-indigo-400">Processando</span>}
-                {task.status === 'done' && <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-400">Concluído</span>}
-                {task.status === 'error' && <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-500/10 text-red-400">Erro</span>}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="text-sm font-medium text-zinc-200 truncate">{task.file.name}</span>
+                <div className="shrink-0">
+                  {task.status === 'pending' && <span className="px-2 py-1 text-xs font-medium rounded-full bg-zinc-800 text-zinc-400">Pendente</span>}
+                  {task.status === 'processing' && <span className="px-2 py-1 text-xs font-medium rounded-full bg-indigo-500/10 text-indigo-400">Processando</span>}
+                  {task.status === 'done' && <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-400">Concluído</span>}
+                  {task.status === 'error' && <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-500/10 text-red-400">Erro</span>}
+                </div>
               </div>
               
-              {task.status === 'error' && (
-                <button
-                  onClick={() => onRetry(task.id)}
-                  className="text-xs font-medium text-red-400 hover:text-red-300 underline"
-                >
-                  Tentar Novamente
-                </button>
-              )}
-              {task.status === 'done' && task.resultUrl && (
-                <button
-                  onClick={() => handleDownload(task.resultUrl!, task.file.name)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/20 transition-all"
-                >
-                  <Download className="w-3 h-3" />
-                  Baixar
-                </button>
-              )}
+              <div className="shrink-0 flex items-center justify-end">
+                {task.status === 'error' && (
+                  <button
+                    onClick={() => onRetry(task.id)}
+                    className="text-xs font-medium text-red-400 hover:text-red-300 underline"
+                  >
+                    Tentar Novamente
+                  </button>
+                )}
+                {task.status === 'done' && task.resultUrl && (
+                  <button
+                    onClick={() => handleDownload(task.resultUrl!, task.file.name)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/20 transition-all"
+                  >
+                    <Download className="w-3 h-3" />
+                    Baixar
+                  </button>
+                )}
+              </div>
             </div>
             
             {task.status === 'processing' && (
@@ -98,7 +102,7 @@ export function BatchProcessingView({ tasks, onCancelAll, onRetry, onReset }: Ba
             )}
             
             {task.status === 'done' && task.resultUrl && (
-              <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="aspect-video bg-black rounded-lg overflow-hidden border border-zinc-800">
                   <video src={URL.createObjectURL(task.file)} controls className="w-full h-full object-contain" />
                 </div>

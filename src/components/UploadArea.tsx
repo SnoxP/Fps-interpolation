@@ -46,17 +46,17 @@ export function UploadArea({ onFilesSelect }: UploadAreaProps) {
   }, [onFilesSelect]);
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-16">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-zinc-100 mb-4 tracking-tight">Melhore a Fluidez do Vídeo com IA</h1>
-        <p className="text-lg text-zinc-400">Envie seus MP4 ou GIF para interpolar quadros inteligentemente até 120 FPS.</p>
+    <div className="w-full max-w-2xl mx-auto mt-8 sm:mt-16">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-3 sm:mb-4 tracking-tight">Melhore a Fluidez do Vídeo com IA</h1>
+        <p className="text-base sm:text-lg text-zinc-400 px-4">Envie seus MP4 ou GIF para interpolar quadros inteligentemente até 120 FPS.</p>
       </div>
 
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
+        className={`relative border-2 border-dashed rounded-xl p-8 sm:p-12 text-center transition-all duration-200 ${
           isDragging
             ? 'border-indigo-500 bg-indigo-500/10'
             : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900'
