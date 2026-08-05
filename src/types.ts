@@ -1,6 +1,10 @@
-export type ProcessStatus = 'idle' | 'configuring' | 'processing' | 'done' | 'error';
-
-export interface InterpolationConfig {
-  fps: number;
-  apiUrl: string;
+export interface VideoTask {
+  id: string;
+  file: File;
+  status: 'pending' | 'processing' | 'done' | 'error';
+  progress: number;
+  message: string;
+  systemInfo: string;
+  resultUrl: string | null;
+  errorMessage: string | null;
 }

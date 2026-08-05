@@ -1,13 +1,13 @@
-import { Settings2, Play, AlertCircle } from 'lucide-react';
+import { Settings2, Play, AlertCircle, Files } from 'lucide-react';
 import { useState } from 'react';
 
 interface ConfigPanelProps {
-  file: File;
-  onStart: (fps: number, apiUrl: string) => void;
+  files: File[];
+  onStart: (fps: number) => void;
   onCancel: () => void;
 }
 
-export function ConfigPanel({ file, onStart, onCancel }: ConfigPanelProps) {
+export function ConfigPanel({ files, onStart, onCancel }: ConfigPanelProps) {
   const [fps, setFps] = useState<number>(60);
 
   const fpsOptions = [
@@ -47,18 +47,20 @@ export function ConfigPanel({ file, onStart, onCancel }: ConfigPanelProps) {
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-amber-400 font-medium text-sm">Aviso de Tempo de Processamento</h4>
-            <p className="text-amber-300/80 text-xs mt-1">Quanto maior o tamanho e a duração do vídeo, mais demorado será o processo de interpolação. O processo pode levar vários minutos.</p>
+            <h4 className="text-amber-400 font-medium text-sm">Aviso de Limitações de Rede e do Google Colab</h4>
+            <p className="text-amber-300/80 text-xs mt-1">
+              Devido ao tempo de processamento e ao tamanho do arquivo final, <strong>vídeos mais longos podem concluir a interpolação no Colab, mas falhar na hora de enviar o resultado de volta para o aplicativo</strong> (devido a timeouts da conexão do Ngrok). Por isso, recomendamos o envio de vídeos curtos (10 a 15 segundos) e dividi-los se necessário.
+            </p>
           </div>
         </div>
 
         <div className="flex items-center justify-between pt-6 mt-6 border-t border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-medium text-zinc-400 uppercase">
-              {file.name.split('.').pop()}
+            <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-medium text-zinc-400">
+              <Files className="w-5 h-5" />
             </div>
             <div className="max-w-[200px] truncate text-sm text-zinc-300 font-medium">
-              {file.name}
+              {files.length} {files.length === 1 ? 'arquivo selecionado' : 'arquivos selecionados'}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -69,11 +71,11 @@ export function ConfigPanel({ file, onStart, onCancel }: ConfigPanelProps) {
               Cancelar
             </button>
             <button
-              onClick={() => onStart(fps, '')}
+              onClick={() => onStart(fps)}
               className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all"
             >
               <Play className="w-4 h-4" fill="currentColor" />
-              Iniciar Interpolação
+              Iniciar Processamento
             </button>
           </div>
         </div>

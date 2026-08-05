@@ -89,7 +89,11 @@ export function HistoryPanel({ user, isDrawer }: HistoryPanelProps) {
               </div>
             </div>
             <div className={`flex items-center gap-3 ${isDrawer ? 'w-full sm:w-auto mt-2 sm:mt-0' : ''}`}>
-              {video.videoUrl ? (
+              {video.videoUrl === 'error' ? (
+                <div className={`px-3 py-1 bg-red-500/10 text-red-400 text-xs font-medium rounded-full border border-red-500/20 text-center ${isDrawer ? 'w-full sm:w-auto' : ''}`}>
+                  Erro ao salvar
+                </div>
+              ) : video.videoUrl ? (
                 <a 
                   href={video.videoUrl}
                   target="_blank"
