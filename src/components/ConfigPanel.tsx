@@ -1,4 +1,4 @@
-import { Settings2, Play, AlertCircle, Link } from 'lucide-react';
+import { Settings2, Play, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface ConfigPanelProps {
@@ -9,7 +9,6 @@ interface ConfigPanelProps {
 
 export function ConfigPanel({ file, onStart, onCancel }: ConfigPanelProps) {
   const [fps, setFps] = useState<number>(60);
-  const [apiUrl, setApiUrl] = useState<string>('');
 
   const fpsOptions = [
     { value: 30, label: '30 FPS', desc: 'Padrão' },
@@ -45,23 +44,6 @@ export function ConfigPanel({ file, onStart, onCancel }: ConfigPanelProps) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-4">URL da API do Google Colab (Opcional - Ngrok)</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Link className="h-5 w-5 text-zinc-500" />
-            </div>
-            <input
-              type="url"
-              className="block w-full pl-10 pr-3 py-3 border border-zinc-800 rounded-xl leading-5 bg-zinc-950 text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm transition-colors"
-              placeholder="https://xxxx-xxxx.ngrok-free.dev/interpolate"
-              value={apiUrl}
-              onChange={(e) => setApiUrl(e.target.value)}
-            />
-          </div>
-          <p className="mt-2 text-xs text-zinc-500">Deixe em branco para rodar a simulação.</p>
-        </div>
-
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
@@ -87,7 +69,7 @@ export function ConfigPanel({ file, onStart, onCancel }: ConfigPanelProps) {
               Cancelar
             </button>
             <button
-              onClick={() => onStart(fps, apiUrl)}
+              onClick={() => onStart(fps, '')}
               className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all"
             >
               <Play className="w-4 h-4" fill="currentColor" />

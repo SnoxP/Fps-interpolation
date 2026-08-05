@@ -51,7 +51,7 @@ export function Header({ user }: HeaderProps) {
 
       {/* Drawer Overlay */}
       {isDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="fixed inset-0 z-40 flex justify-end">
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
             onClick={() => setIsDrawerOpen(false)} 

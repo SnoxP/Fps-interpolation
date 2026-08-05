@@ -43,18 +43,6 @@ export default function App() {
       clearInterval(pollingIntervalRef.current);
     }
     
-    // Tentar cancelar no backend também se estivermos usando uma API
-    const currentApiUrl = document.querySelector('input[type="url"]')?.getAttribute('value') || 'https://adena-dangerless-infrequently.ngrok-free.dev/interpolate';
-    if (currentApiUrl) {
-      try {
-        const cancelUrl = currentApiUrl.replace('/interpolate', '/cancel');
-        fetch(cancelUrl, { 
-          method: 'POST',
-          headers: { 'ngrok-skip-browser-warning': 'true' }
-        }).catch(e => console.error('Error cancelling on backend:', e));
-      } catch(e) {}
-    }
-
     setStatus('configuring');
     setErrorMessage('O processo foi cancelado pelo usuário.');
   }, []);
