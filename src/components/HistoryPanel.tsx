@@ -23,8 +23,7 @@ export function HistoryPanel({ user, isDrawer }: HistoryPanelProps) {
   useEffect(() => {
     const q = query(
       collection(db, 'videos'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -32,6 +31,14 @@ export function HistoryPanel({ user, isDrawer }: HistoryPanelProps) {
         id: doc.id,
         ...doc.data()
       })) as VideoHistory[];
+      
+      // Sort manually by createdAt (descending)
+      data.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis() || 0;
+        const timeB = b.createdAt?.toMillis() || 0;
+        return timeB - timeA;
+      });
+      
       setHistory(data);
     });
 

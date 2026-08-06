@@ -1,51 +1,51 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { Header } from './components/Header';
 import { UploadArea } from './components/UploadArea';
 import { ConfigPanel } from './components/ConfigPanel';
-import { BatchProcessingView } from './components/BatchProcessingView';
-import { Header } from './components/Header';
-import { AlertCircle } from 'lucide-react';
+import { ProcessingView } from './components/ProcessingView';
+import { ResultView } from './components/ResultView';
 import { AuthWrapper } from './components/AuthWrapper';
-import { User } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { HistoryPanel } from './components/HistoryPanel';
+import { ProcessStatus } from './types';
+import { AlertCircle } from 'lucide-react';
 import { db } from './lib/firebase';
-import { VideoTask } from './types';
-import { splitVideo, mergeVideos } from './lib/videoUtils';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { User } from 'firebase/auth';
 
 export default function App() {
-  const [tasks, setTasks] = useState<VideoTask[]>([]);
-  const [globalStatus, setGlobalStatus] = useState<'idle' | 'configuring' | 'processing_batch' | 'done'>('idle');
-  const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(null);
-  const [targetFps, setTargetFps] = useState(60);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  
+  const [status, setStatus] = useState<ProcessStatus>('idle');
+  const [file, setFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<number>(0);
+  const [progressMessage, setProgressMessage] = useState<string>('');
+  const [systemInfo, setSystemInfo] = useState<string>('');
+  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const apiUrlRef = useRef<string | null>(null);
+
   const abortControllerRef = useRef<AbortController | null>(null);
   const pollingIntervalRef = useRef<number | null>(null);
-  const batchCancelRef = useRef<boolean>(false);
 
-  const handleFilesSelect = useCallback((files: File[]) => {
-    const newTasks: VideoTask[] = files.map(file => ({
-      id: Math.random().toString(36).substring(7),
-      file,
-      status: 'pending',
-      progress: 0,
-      message: 'Aguardando na fila...',
-      systemInfo: '',
-      resultUrl: null,
-      errorMessage: null
-    }));
-    
-    setTasks(newTasks);
-    setGlobalStatus('configuring');
-    setGlobalErrorMessage(null);
+  const handleFileSelect = useCallback((selectedFile: File) => {
+    setFile(selectedFile);
+    setStatus('configuring');
+    setErrorMessage(null);
   }, []);
 
-  const handleCancelConfig = useCallback(() => {
-    setTasks([]);
-    setGlobalStatus('idle');
+  const handleCancel = useCallback(() => {
+    setFile(null);
+    setStatus('idle');
+    setErrorMessage(null);
   }, []);
 
-  const handleCancelAll = useCallback(() => {
-    batchCancelRef.current = true;
+  const handleCancelProcessing = useCallback(async () => {
+    if (apiUrlRef.current) {
+      try {
+        await fetch(apiUrlRef.current.replace('/interpolate', '/cancel'), { method: 'POST', headers: { 'ngrok-skip-browser-warning': 'true' } });
+      } catch (e) {
+        console.error('Failed to cancel on server', e);
+      }
+    }
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -53,33 +53,64 @@ export default function App() {
       clearInterval(pollingIntervalRef.current);
     }
     
-    setTasks(prev => prev.map(t => 
-      t.status === 'processing' || t.status === 'pending' 
-        ? { ...t, status: 'error', errorMessage: 'Cancelado pelo usuário' } 
-        : t
-    ));
+    setStatus('configuring');
+    setIsPaused(false);
+    setErrorMessage('O processo foi cancelado pelo usuário.');
   }, []);
 
-  const processTask = async (task: VideoTask, fps: number, user: User) => {
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'processing', progress: 0, message: 'Preparando vídeo...' } : t));
-    
-    abortControllerRef.current = new AbortController();
-    const FIXED_API_URL = "https://adena-dangerless-infrequently.ngrok-free.dev/interpolate";
-    
-    try {
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, progress: 5, message: 'Analisando e dividindo vídeo...' } : t));
-      const chunks = await splitVideo(task.file, 15);
-      const processedChunks: Blob[] = [];
+  const handlePauseProcessing = useCallback(async () => {
+    if (apiUrlRef.current) {
+      try {
+        const res = await fetch(apiUrlRef.current.replace('/interpolate', '/pause'), { method: 'POST', headers: { 'ngrok-skip-browser-warning': 'true' } });
+        if (res.ok) setIsPaused(true);
+      } catch (e) {
+        console.error('Failed to pause on server', e);
+      }
+    }
+  }, []);
 
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
+  const handleResumeProcessing = useCallback(async () => {
+    if (apiUrlRef.current) {
+      try {
+        const res = await fetch(apiUrlRef.current.replace('/interpolate', '/resume'), { method: 'POST', headers: { 'ngrok-skip-browser-warning': 'true' } });
+        if (res.ok) setIsPaused(false);
+      } catch (e) {
+        console.error('Failed to resume on server', e);
+      }
+    }
+  }, []);
+
+  const handleStartProcessing = useCallback(async (fps: number, apiUrl: string, user: User) => {
+    if (!file) return;
+    apiUrlRef.current = apiUrl;
+    setStatus('processing');
+    setIsPaused(false);
+    setProgress(0);
+    setProgressMessage('Analisando quadros...');
+    setSystemInfo('');
+    setErrorMessage(null);
+
+    abortControllerRef.current = new AbortController();
+
+    try {
+      if (apiUrl) {
+        // Real process
+        setProgressMessage('Enviando e Processando via API...');
+        setProgress(5);
+        
+        const statusUrl = apiUrl.replace('/interpolate', '/status');
         
         pollingIntervalRef.current = window.setInterval(async () => {
           try {
-            const statusUrl = FIXED_API_URL.replace('/interpolate', `/status?t=${Date.now()}`);
+            const statusUrl = apiUrl.replace('/interpolate', `/status?t=${Date.now()}`);
             const res = await fetch(statusUrl, { headers: { 'ngrok-skip-browser-warning': 'true' } });
             if (res.ok) {
               const data = await res.json();
+              if (data.status === 'paused') {
+                setIsPaused(true);
+              } else if (data.status === 'processing' || data.status === 'idle') {
+                setIsPaused(false);
+              }
               let p = data.progress || 0;
               let mappedProgress = 0;
               if (p < 10) {
@@ -89,40 +120,25 @@ export default function App() {
               } else {
                 mappedProgress = 95 + ((p - 90) / 10) * 5;
               }
+              setProgress(Math.round(mappedProgress));
               
-              const chunkWeight = 80 / chunks.length;
-              const baseProgress = 10 + (i * chunkWeight);
-              const totalProgress = baseProgress + (mappedProgress / 100) * chunkWeight;
-              
-              setTasks(prev => prev.map(t => {
-                if (t.id === task.id) {
-                  let msg = data.message;
-                  if (msg === 'Iniciando...') {
-                    msg = `Enviando parte ${i + 1} de ${chunks.length}...`;
-                  } else {
-                    msg = `[Parte ${i + 1}/${chunks.length}] ${msg}`;
-                  }
-                  return { 
-                    ...t, 
-                    progress: Math.min(90, Math.round(totalProgress)), 
-                    message: msg,
-                    systemInfo: data.systemInfo || ''
-                  };
-                }
-                return t;
-              }));
+              if (data.message === 'Iniciando...') {
+                 setProgressMessage('Enviando e Processando via API...');
+              } else {
+                 setProgressMessage(data.message);
+              }
+              setSystemInfo(data.systemInfo || '');
             }
           } catch (e) {
             // Ignore polling errors
           }
         }, 1500);
-
-        const formData = new FormData();
-        const chunkFile = new File([chunk], `part${i}.mp4`, { type: 'video/mp4' });
-        formData.append('file', chunkFile);
-        formData.append('fps', fps.toString());
         
-        const response = await fetch(FIXED_API_URL, {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('fps', fps.toString());
+
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'ngrok-skip-browser-warning': 'true'
@@ -133,8 +149,9 @@ export default function App() {
 
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
 
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
+        // Check if the response is JSON (often an error object)
+        const resContentType = response.headers.get('content-type');
+        if (resContentType && resContentType.includes('application/json')) {
           const data = await response.json();
           if (data.error) {
             throw new Error(data.error + (data.details ? `\n\nDetalhes: ${data.details}` : ''));
@@ -142,126 +159,160 @@ export default function App() {
         }
 
         if (!response.ok) {
-          throw new Error(`Erro na API na parte ${i + 1}: ${response.statusText}`);
+          throw new Error(`Erro na API: ${response.statusText}`);
         }
 
-        const blob = await response.blob();
-        if (blob.size === 0) {
-          throw new Error(`A API retornou um arquivo vazio na parte ${i + 1}.`);
-        }
+        setProgress(80);
+        setProgressMessage('Finalizando...');
         
-        processedChunks.push(blob);
-      }
-
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, progress: 95, message: 'Unindo partes do vídeo...' } : t));
-      
-      const finalBlob = await mergeVideos(processedChunks);
-      const url = URL.createObjectURL(finalBlob);
-      
-      setTasks(prev => prev.map(t => t.id === task.id ? { 
-        ...t, 
-        status: 'done', 
-        progress: 100, 
-        message: 'Concluído', 
-        resultUrl: url 
-      } : t));
-
-      // Save to cloud and history
-      (async () => {
+        const resContentType2 = response.headers.get('content-type');
         let cloudUrl = null;
-        try {
-          const formData = new FormData();
-          formData.append('reqtype', 'fileupload');
-          formData.append('time', '1h');
-          formData.append('fileToUpload', task.file, task.file.name);
-          const uploadRes = await fetch('https://litterbox.catbox.moe/user/api.php', {
-            method: 'POST',
-            body: formData
-          });
-          if (uploadRes.ok) {
-            cloudUrl = await uploadRes.text();
+        let finalUrl = null;
+        let blob = null;
+        
+        if (resContentType2 && resContentType2.includes('application/json')) {
+            const data = await response.json();
+            if (data.url) {
+                cloudUrl = data.url;
+                finalUrl = data.url;
+            } else if (data.error) {
+                throw new Error(data.error);
+            }
+        } else {
+            blob = await response.blob();
+            if (blob.size === 0) {
+              throw new Error('O vídeo retornado está vazio.');
+            }
+            finalUrl = URL.createObjectURL(blob);
+        }
+
+        console.log(`Received blob: ${blob.size} bytes, type: ${blob.type}`);
+        
+        if (blob.size === 0) {
+          throw new Error('A API retornou um arquivo de vídeo vazio.');
+        }
+
+        const url = URL.createObjectURL(blob);
+        
+        setProgress(100);
+        setResultUrl(url);
+        setStatus('done');
+        
+        // Save to cloud in background
+        (async () => {
+          let cloudUrl = null;
+          try {
+            const formData = new FormData();
+            formData.append('reqtype', 'fileupload');
+            formData.append('time', '1h');
+            const resultFileName = file.name.replace(/\.[^/.]+$/, "") + ".mp4";
+            formData.append('fileToUpload', blob, resultFileName);
+
+            const uploadRes = await fetch('https://litterbox.catbox.moe/user/api.php', {
+              method: 'POST',
+              body: formData
+            });
+            if (uploadRes.ok) {
+              cloudUrl = await uploadRes.text();
+            }
+          } catch (err) {
+            console.error('Upload to catbox failed:', err);
           }
-        } catch (err) {
-          console.error('Upload to catbox failed:', err);
-        }
 
-        try {
-          await addDoc(collection(db, 'videos'), {
-            userId: user.uid,
-            fileName: task.file.name,
-            fps: fps,
-            videoUrl: cloudUrl || 'error',
-            createdAt: serverTimestamp()
-          });
-        } catch (e) {
-          console.error('Failed to save to history', e);
-        }
-      })();
+          // Save history to Firebase
+          try {
+            await addDoc(collection(db, 'videos'), {
+              userId: user.uid,
+              fileName: file.name,
+              fps: fps,
+              videoUrl: cloudUrl || 'error',
+              createdAt: serverTimestamp()
+            });
+          } catch (e) {
+            console.error('Failed to save to history', e);
+          }
+        })();
+      } else {
+        // Simulation process
+        const stages = [
+          { p: 10, m: 'Extraindo quadros...' },
+          { p: 35, m: 'Executando análise de fluxo óptico...' },
+          { p: 65, m: `Interpolando para ${fps} FPS...` },
+          { p: 90, m: 'Codificando vídeo de saída...' },
+          { p: 100, m: 'Concluído' }
+        ];
 
+        let currentStage = 0;
+        
+        pollingIntervalRef.current = window.setInterval(() => {
+          if (currentStage < stages.length) {
+            setProgress(stages[currentStage].p);
+            setProgressMessage(stages[currentStage].m);
+            currentStage++;
+          } else {
+            if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+            
+            // In simulation, we just return the original file as a mock result
+            const url = URL.createObjectURL(file);
+            setResultUrl(url);
+            setStatus('done');
+
+            // Save to cloud in background
+            (async () => {
+              let cloudUrl = null;
+              try {
+                const formData = new FormData();
+                formData.append('reqtype', 'fileupload');
+                formData.append('time', '1h');
+                formData.append('fileToUpload', file, file.name);
+
+                const uploadRes = await fetch('https://litterbox.catbox.moe/user/api.php', {
+                  method: 'POST',
+                  body: formData
+                });
+                if (uploadRes.ok) {
+                  cloudUrl = await uploadRes.text();
+                }
+              } catch (err) {
+                console.error('Upload to catbox failed:', err);
+              }
+
+              try {
+                await addDoc(collection(db, 'videos'), {
+                  userId: user.uid,
+                  fileName: file.name,
+                  fps: fps,
+                  videoUrl: cloudUrl,
+                  createdAt: serverTimestamp()
+                });
+              } catch (e) {
+                console.error('Failed to save to history', e);
+              }
+            })();
+          }
+        }, 1500);
+      }
     } catch (err: any) {
       if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-      
       if (err.name === 'AbortError') {
-        // Handled globally
+        console.log('Process aborted');
         return;
       }
-      
-      let msg = err.message || 'Ocorreu um erro durante o processamento.';
-      if (msg.includes('Failed to fetch')) {
-        msg = 'Falha na conexão com o servidor. A interpolação pode ter concluído no Colab, mas ocorreu um erro de timeout (Ngrok) ou limite de tamanho ao baixar o vídeo final. Recomendamos enviar vídeos mais curtos (10-15s).';
-      }
-      
-      setTasks(prev => prev.map(t => t.id === task.id ? { 
-        ...t, 
-        status: 'error', 
-        errorMessage: msg 
-      } : t));
+      console.error(err);
+      setStatus('error');
+      setErrorMessage(err.message || 'Ocorreu um erro durante o processamento.');
     }
-  };
-
-  const processQueue = async (currentTasks: VideoTask[], fps: number, user: User) => {
-    let tasksToProcess = [...currentTasks];
-    for (let i = 0; i < tasksToProcess.length; i++) {
-      if (batchCancelRef.current) break;
-      await processTask(tasksToProcess[i], fps, user);
-    }
-  };
-
-  const handleStartProcessing = useCallback((fps: number, user: User) => {
-    setTargetFps(fps);
-    setCurrentUser(user);
-    setGlobalStatus('processing_batch');
-    batchCancelRef.current = false;
-    
-    setTasks(prev => {
-      const cloned = [...prev];
-      processQueue(cloned, fps, user);
-      return cloned;
-    });
-    
-  }, []);
-
-  const handleRetry = useCallback((taskId: string) => {
-    if (!currentUser) return;
-    batchCancelRef.current = false;
-    setTasks(prev => {
-      const updated = prev.map(t => t.id === taskId ? { ...t, status: 'pending', errorMessage: null } : t);
-      const toProcess = updated.filter(t => t.id === taskId);
-      processQueue(toProcess, targetFps, currentUser);
-      return updated;
-    });
-  }, [currentUser, targetFps]);
+  }, [file]);
 
   const handleReset = useCallback(() => {
-    tasks.forEach(task => {
-      if (task.resultUrl) {
-        URL.revokeObjectURL(task.resultUrl);
-      }
-    });
-    setTasks([]);
-    setGlobalStatus('idle');
-    setGlobalErrorMessage(null);
-  }, [tasks]);
+    if (resultUrl) {
+      URL.revokeObjectURL(resultUrl);
+    }
+    setFile(null);
+    setResultUrl(null);
+    setStatus('idle');
+    setErrorMessage(null);
+  }, [resultUrl]);
 
   return (
     <AuthWrapper>
@@ -270,24 +321,54 @@ export default function App() {
           <Header user={user} />
           
           <main className="container mx-auto px-6 py-12">
-            {globalStatus === 'idle' && (
-              <UploadArea onFilesSelect={handleFilesSelect} />
+            {status === 'error' && (
+              <div className="w-full max-w-2xl mx-auto mb-8 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-red-400 font-medium">Falha no Processamento</h4>
+                  <p className="text-red-300/80 text-sm mt-1">{errorMessage}</p>
+                  <button 
+                    onClick={() => setStatus('configuring')}
+                    className="text-sm font-medium text-red-400 underline mt-2 hover:text-red-300"
+                  >
+                    Tentar Novamente
+                  </button>
+                </div>
+              </div>
             )}
-            
-            {globalStatus === 'configuring' && tasks.length > 0 && (
+
+            {(status === 'idle' || status === 'error') && (
+              <>
+                <UploadArea onFileSelect={handleFileSelect} />
+                <HistoryPanel user={user} />
+              </>
+            )}
+
+            {status === 'configuring' && file && (
               <ConfigPanel 
-                files={tasks.map(t => t.file)} 
-                onStart={(fps) => handleStartProcessing(fps, user)} 
-                onCancel={handleCancelConfig} 
+                file={file} 
+                onStart={(fps, apiUrl) => handleStartProcessing(fps, apiUrl, user)} 
+                onCancel={handleCancel} 
               />
             )}
-            
-            {globalStatus === 'processing_batch' && (
-              <BatchProcessingView 
-                 tasks={tasks}
-                 onCancelAll={handleCancelAll}
-                 onRetry={handleRetry}
-                 onReset={handleReset}
+
+            {status === 'processing' && (
+              <ProcessingView 
+                progress={progress} 
+                message={progressMessage} 
+                systemInfo={systemInfo}
+                isPaused={isPaused}
+                onCancel={handleCancelProcessing}
+                onPause={handlePauseProcessing}
+                onResume={handleResumeProcessing}
+              />
+            )}
+
+            {status === 'done' && file && resultUrl && (
+              <ResultView 
+                originalFile={file} 
+                resultUrl={resultUrl} 
+                onReset={handleReset} 
               />
             )}
           </main>

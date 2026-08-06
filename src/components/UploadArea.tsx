@@ -2,10 +2,10 @@ import { UploadCloud, FileVideo } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 
 interface UploadAreaProps {
-  onFilesSelect: (files: File[]) => void;
+  onFileSelect: (file: File) => void;
 }
 
-export function UploadArea({ onFilesSelect }: UploadAreaProps) {
+export function UploadArea({ onFileSelect }: UploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -23,40 +23,34 @@ export function UploadArea({ onFilesSelect }: UploadAreaProps) {
     setIsDragging(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const validFiles = Array.from(e.dataTransfer.files as Iterable<File>).filter(
-        (f) => f.type === 'video/mp4' || f.type === 'image/gif'
-      );
-      if (validFiles.length > 0) {
-        onFilesSelect(validFiles);
+      const file = e.dataTransfer.files[0];
+      if (file.type === 'video/mp4' || file.type === 'image/gif') {
+        onFileSelect(file);
       } else {
-        alert('Por favor, envie apenas arquivos MP4 ou GIF.');
+        alert('Por favor, envie um arquivo MP4 ou GIF.');
       }
     }
-  }, [onFilesSelect]);
+  }, [onFileSelect]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const validFiles = Array.from(e.target.files as Iterable<File>).filter(
-        (f) => f.type === 'video/mp4' || f.type === 'image/gif'
-      );
-      if (validFiles.length > 0) {
-        onFilesSelect(validFiles);
-      }
+      const file = e.target.files[0];
+      onFileSelect(file);
     }
-  }, [onFilesSelect]);
+  }, [onFileSelect]);
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-8 sm:mt-16">
-      <div className="text-center mb-6 sm:mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-3 sm:mb-4 tracking-tight">Melhore a Fluidez do Vídeo com IA</h1>
-        <p className="text-base sm:text-lg text-zinc-400 px-4">Envie seus MP4 ou GIF para interpolar quadros inteligentemente até 120 FPS.</p>
+    <div className="w-full max-w-2xl mx-auto mt-16">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-zinc-100 mb-4 tracking-tight">Melhore a Fluidez do Vídeo com IA</h1>
+        <p className="text-lg text-zinc-400">Envie seu MP4 ou GIF para interpolar quadros inteligentemente até 120 FPS.</p>
       </div>
 
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-xl p-8 sm:p-12 text-center transition-all duration-200 ${
+        className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
           isDragging
             ? 'border-indigo-500 bg-indigo-500/10'
             : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900'
@@ -65,7 +59,6 @@ export function UploadArea({ onFilesSelect }: UploadAreaProps) {
         <input
           type="file"
           accept="video/mp4, image/gif"
-          multiple
           onChange={handleFileInput}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
@@ -74,8 +67,8 @@ export function UploadArea({ onFilesSelect }: UploadAreaProps) {
             {isDragging ? <FileVideo className="w-8 h-8" /> : <UploadCloud className="w-8 h-8" />}
           </div>
           <div>
-            <p className="text-zinc-200 font-medium text-lg">Clique ou arraste arquivos para esta área para enviar.</p>
-            <p className="text-zinc-500 text-sm mt-2">Suporta múltiplos arquivos MP4 e GIF até 500MB</p>
+            <p className="text-zinc-200 font-medium text-lg">Clique ou arraste um arquivo para esta área para enviar.</p>
+            <p className="text-zinc-500 text-sm mt-2">Suporta MP4 e GIF até 500MB</p>
           </div>
         </div>
       </div>
