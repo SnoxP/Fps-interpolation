@@ -164,36 +164,70 @@ def interpolate_video(file: UploadFile = File(...), fps: int = Form(60)):
         if fps >= 120:
             exp = 2
 
-        progress_data.update({"progress": 10, "message": "Processando IA (Interpolação)..."})
+        def run_inference(cmd_args, progress_start, progress_range):
+            global current_process, progress_data
+            current_process = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            buffer = ""
+            while True:
+                char = current_process.stdout.read(1)
+                if not char:
+                    if current_process.poll() is not None:
+                        break
+                    continue
+                if char in ('\\r', '\\n'):
+                    if buffer:
+                        match_percent = re.search(r'(\d+)%\|', buffer)
+                        match_frames = re.search(r'(\d+/\d+)', buffer)
+                        frames_str = match_frames.group(1) if match_frames else ""
+                        if match_percent:
+                            p_ia = int(match_percent.group(1))
+                            progress_data["progress"] = progress_start + int((p_ia / 100) * progress_range)
+                            if progress_data["status"] != "paused":
+                                progress_data["systemInfo"] = frames_str
+                            print(f"\\rProgresso: {progress_data['progress']}% | Frames: {frames_str}", end="", flush=True)
+                    buffer = ""
+                else:
+                    buffer += char
+            if progress_data["status"] == "idle":
+                raise Exception("Processo cancelado pelo usuário.")
 
-        cmd = ['python3', 'inference_video.py', f'--exp={exp}', f'--video={input_video}', f'--output={interpolated_video}']
-        current_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        import subprocess as sp
+        try:
+            duration_str = sp.check_output(f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {input_video}", shell=True).decode('utf-8').strip()
+            duration = float(duration_str) if duration_str else 0
+        except:
+            duration = 0
 
-        buffer = ""
-        while True:
-            char = current_process.stdout.read(1)
-            if not char:
-                if current_process.poll() is not None:
-                    break
-                continue
-            if char in ('\\r', '\\n'):
-                if buffer:
-                    match_percent = re.search(r'(\d+)%\|', buffer)
-                    match_frames = re.search(r'(\d+/\d+)', buffer)
-                    frames_str = match_frames.group(1) if match_frames else ""
-
-                    if match_percent:
-                        p_ia = int(match_percent.group(1))
-                        progress_data["progress"] = 10 + int(p_ia * 0.8)
-                        if progress_data["status"] != "paused":
-                            progress_data["systemInfo"] = frames_str
-                        print(f"\\rProgresso: {progress_data['progress']}% | Frames: {frames_str}", end="", flush=True)
-                buffer = ""
-            else:
-                buffer += char
-
-        if progress_data["status"] == "idle":
-            return {"error": "Processo cancelado pelo usuário."}
+        if duration > 20.0:
+            progress_data.update({"progress": 10, "message": "Dividindo vídeo em partes..."})
+            for f in os.listdir('.'):
+                if f.startswith('chunk_') and f.endswith('.mp4'):
+                    os.remove(f)
+            os.system(f'ffmpeg -y -i {input_video} -c copy -map 0:v -segment_time 20 -f segment chunk_%03d.mp4 -loglevel quiet')
+            chunks = [f for f in os.listdir('.') if f.startswith('chunk_') and f.endswith('.mp4')]
+            chunks.sort()
+            
+            interpolated_chunks = []
+            for i, chunk in enumerate(chunks):
+                progress_data.update({"message": f"Processando parte {i+1} de {len(chunks)}..."})
+                chunk_out = f"interp_{chunk}"
+                cmd = ['python3', 'inference_video.py', f'--exp={exp}', f'--video={chunk}', f'--output={chunk_out}']
+                run_inference(cmd, 10 + int(i / len(chunks) * 80), int(80 / len(chunks)))
+                interpolated_chunks.append(chunk_out)
+            
+            progress_data.update({"progress": 90, "message": "Juntando partes..."})
+            with open('concat_list.txt', 'w') as f:
+                for chunk in interpolated_chunks:
+                    f.write(f"file '{chunk}'\n")
+            os.system(f'ffmpeg -y -f concat -safe 0 -i concat_list.txt -c copy {interpolated_video} -loglevel quiet')
+            
+            for c in chunks + interpolated_chunks:
+                if os.path.exists(c): os.remove(c)
+            if os.path.exists('concat_list.txt'): os.remove('concat_list.txt')
+        else:
+            progress_data.update({"progress": 10, "message": "Processando IA (Interpolação)..."})
+            cmd = ['python3', 'inference_video.py', f'--exp={exp}', f'--video={input_video}', f'--output={interpolated_video}']
+            run_inference(cmd, 10, 80)
 
         if not os.path.exists(interpolated_video):
             raise Exception("Ocorreu um erro no RIFE: o vídeo interpolado não foi gerado.")
