@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { User } from 'firebase/auth';
-import { Clock, Film, Video, Download } from 'lucide-react';
+import { Clock, Film, Video, Download, Trash2 } from 'lucide-react';
 
 interface HistoryPanelProps {
   user: User;
@@ -19,6 +19,17 @@ interface VideoHistory {
 
 export function HistoryPanel({ user, isDrawer }: HistoryPanelProps) {
   const [history, setHistory] = useState<VideoHistory[]>([]);
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este vídeo do histórico?')) {
+      try {
+        await deleteDoc(doc(db, 'videos', id));
+      } catch (err) {
+        console.error('Falha ao excluir o vídeo', err);
+        alert('Falha ao excluir o vídeo.');
+      }
+    }
+  };
 
   useEffect(() => {
     const q = query(
@@ -115,6 +126,15 @@ export function HistoryPanel({ user, isDrawer }: HistoryPanelProps) {
                   Salvando...
                 </div>
               )}
+              
+              <button 
+                onClick={() => handleDelete(video.id)}
+                className={`flex items-center justify-center p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ${isDrawer ? 'w-full sm:w-auto' : ''}`}
+                title="Excluir"
+              >
+                <Trash2 className="w-4 h-4" />
+                {isDrawer && <span className="ml-2 sm:hidden">Excluir</span>}
+              </button>
             </div>
           </div>
         ))}
